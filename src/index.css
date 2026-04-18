@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design tokens ─────────────────────────────── */
+:root {
+  --bg:      #09090C;
+  --s1:      #111116;
+  --s2:      #18181F;
+  --s3:      #1F1F28;
+  --b1:      #252530;
+  --b2:      #30303D;
+  --gold:    #C8A96B;
+  --gold2:   rgba(200, 169, 107, 0.12);
+  --gold3:   rgba(200, 169, 107, 0.25);
+  --txt:     #EEEAE0;
+  --muted:   #6A6A78;
+  --muted2:  #4A4A56;
+  --red:     #D95C5C;
+  --green:   #5AB88A;
+  --blue:    #6E9AC9;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Base ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+#root {
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ── Typography helpers ────────────────────────── */
+.font-display { font-family: 'Cormorant Garamond', serif; }
+
+/* ── Scrollbar hide ────────────────────────────── */
+.hide-scroll { scrollbar-width: none; }
+.hide-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Cards ─────────────────────────────────────── */
+.card {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: 16px;
+}
+.card-inner {
+  background: var(--s2);
+  border: 1px solid var(--b1);
+  border-radius: 12px;
+}
+
+/* ── Tag pill ───────────────────────────────────── */
+.tag {
+  background: var(--gold2);
+  color: var(--gold);
+  border-radius: 20px;
+  font-size: 11px;
+  padding: 3px 11px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+/* ── Category filter chips ─────────────────────── */
+.chip {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--b2);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
+}
+.chip:hover  { border-color: var(--gold); color: var(--gold); }
+.chip.active { background: var(--gold2); border-color: var(--gold3); color: var(--gold); }
+
+/* ── Buttons ────────────────────────────────────── */
+.btn-gold {
+  background: var(--gold);
+  border: none;
+  border-radius: 12px;
+  color: #09090C;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+}
+.btn-gold:hover  { opacity: 0.88; }
+.btn-gold:active { transform: scale(0.97); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--b2);
+  border-radius: 12px;
+  color: var(--txt);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-ghost:hover  { border-color: var(--gold); color: var(--gold); }
+
+.btn-danger {
+  background: rgba(217, 92, 92, 0.1);
+  border: 1px solid rgba(217, 92, 92, 0.28);
+  border-radius: 13px;
+  color: var(--red);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  width: 100%;
+  padding: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-danger:hover { background: rgba(217, 92, 92, 0.18); }
+
+/* ── Upload zone ────────────────────────────────── */
+.upload-zone {
+  border: 1.5px dashed var(--b2);
+  border-radius: 16px;
+  padding: 22px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.upload-zone:hover { border-color: var(--gold); background: var(--gold2); }
+
+/* ── Wardrobe grid ──────────────────────────────── */
+.wardrobe-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+/* ── Bottom nav ─────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  background: rgba(9, 9, 12, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid var(--b1);
+  padding: 10px 0 calc(22px + var(--safe-bottom));
+  display: flex;
+  justify-content: space-around;
+  z-index: 50;
+}
+
+/* ── Skeleton shimmer ───────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--s2) 25%, var(--s3) 50%, var(--s2) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 8px;
+}
+
+/* ── Spinner ────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.9s linear infinite; }
+
+/* ── Style tip border ───────────────────────────── */
+.tip-box {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(200, 169, 107, 0.06);
+  border-left: 2px solid var(--gold);
+}
+
+/* ── Inspo image ────────────────────────────────── */
+.inspo-img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
