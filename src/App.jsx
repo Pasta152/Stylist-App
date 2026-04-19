@@ -1,49 +1,103 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 
-import BottomNav     from './components/BottomNav'
+import BottomNav          from './components/BottomNav'
 import { Toast, useToast } from './components/ui'
 
+import AuthScreen    from './screens/AuthScreen'
 import HomeScreen    from './screens/HomeScreen'
 import WardrobeScreen from './screens/WardrobeScreen'
 import InspoScreen   from './screens/InspoScreen'
+import ProfileScreen from './screens/ProfileScreen'
 
 import { SAMPLE_WARDROBE, pickAffiliate } from './lib/constants'
 import { fetchWeather, FALLBACK_WEATHER }  from './lib/weather'
 import { generateOOTD }                    from './lib/ai'
+import {
+  getCurrentUser,
+  getUserWardrobe,
+  saveUserWardrobe,
+  getUserLiked,
+  saveUserLiked,
+} from './lib/auth'
 
 export default function App() {
+  /* ── Auth state ──────────────────────────────────────────── */
+  const [user, setUser] = useState(() => getCurrentUser())
+
   /* ── Tab routing ─────────────────────────────────────────── */
   const [tab, setTab] = useState('home')
 
-  /* ── Wardrobe state ──────────────────────────────────────── */
-  const [wardrobe, setWardrobe] = useState(SAMPLE_WARDROBE)
+  /* ── Wardrobe state (per-user) ───────────────────────────── */
+  const [wardrobe, setWardrobeState] = useState(() => {
+    if (!user) return SAMPLE_WARDROBE
+    return getUserWardrobe(user.id) ?? SAMPLE_WARDROBE
+  })
 
   /* ── Weather state ───────────────────────────────────────── */
-  const [weather, setWeather]             = useState(null)
+  const [weather, setWeather]               = useState(null)
   const [weatherLoading, setWeatherLoading] = useState(true)
 
   /* ── OOTD state ──────────────────────────────────────────── */
-  const [ootd, setOotd]         = useState(null)
+  const [ootd, setOotd]           = useState(null)
   const [ootdLoading, setOotdLoading] = useState(false)
 
-  /* ── Community likes ─────────────────────────────────────── */
-  const [liked, setLiked] = useState(new Set())
+  /* ── Community likes (per-user) ──────────────────────────── */
+  const [liked, setLikedState] = useState(() => {
+    if (!user) return new Set()
+    return getUserLiked(user.id)
+  })
 
   /* ── Toast notifications ─────────────────────────────────── */
   const { toast, notify } = useToast()
 
+  /* ── Persist wardrobe on change ──────────────────────────── */
+  function setWardrobe(nextOrUpdater) {
+    setWardrobeState(prev => {
+      const next = typeof nextOrUpdater === 'function' ? nextOrUpdater(prev) : nextOrUpdater
+      if (user) saveUserWardrobe(user.id, next)
+      return next
+    })
+  }
+
+  /* ── Persist likes on change ─────────────────────────────── */
+  function setLiked(updater) {
+    setLikedState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      if (user) saveUserLiked(user.id, next)
+      return next
+    })
+  }
+
+  /* ── Load user data on login ─────────────────────────────── */
+  function handleAuth(loggedInUser) {
+    setUser(loggedInUser)
+    setWardrobeState(getUserWardrobe(loggedInUser.id) ?? SAMPLE_WARDROBE)
+    setLikedState(getUserLiked(loggedInUser.id))
+    setOotd(null)
+    setTab('home')
+  }
+
+  /* ── Clear state on logout ───────────────────────────────── */
+  function handleLogout() {
+    setUser(null)
+    setWardrobeState(SAMPLE_WARDROBE)
+    setLikedState(new Set())
+    setOotd(null)
+    setTab('home')
+  }
+
+  /* ── Update user profile in state ────────────────────────── */
+  function handleUserUpdate(updated) {
+    setUser(updated)
+    notify('Το προφίλ ενημερώθηκε', 'success')
+  }
+
   /* ── Fetch weather on mount ──────────────────────────────── */
   useEffect(() => {
     fetchWeather()
-      .then((w) => {
-        setWeather(w)
-        setWeatherLoading(false)
-      })
-      .catch(() => {
-        setWeather(FALLBACK_WEATHER)
-        setWeatherLoading(false)
-      })
+      .then(w => { setWeather(w); setWeatherLoading(false) })
+      .catch(() => { setWeather(FALLBACK_WEATHER); setWeatherLoading(false) })
   }, [])
 
   /* ── Auto-generate OOTD once weather + wardrobe are ready ── */
@@ -63,9 +117,8 @@ export default function App() {
       setOotd({ ...data, affiliate })
     } catch (err) {
       console.error('OOTD generation failed:', err)
-      // Graceful fallback — pick first 3 items from wardrobe
       const fallback = {
-        outfit:          wardrobe.slice(0, 3).map((i) => i.name),
+        outfit:          wardrobe.slice(0, 3).map(i => i.name),
         description:     `It's ${w.temp}°C and ${w.condition.label.toLowerCase()} in ${w.city} — a perfect day for a curated everyday look.`,
         vibe:            'Casual',
         tip:             'Tuck your top on one side for an effortless, intentional silhouette.',
@@ -76,27 +129,23 @@ export default function App() {
     setOotdLoading(false)
   }
 
-  /* ── Remix handler ───────────────────────────────────────── */
-  function handleRemix() {
-    setOotd(null)
-    runOOTD()
-  }
+  function handleRemix()    { setOotd(null); runOOTD() }
+  function handleOotdReset() { setOotd(null) }
 
-  /* ── Reset OOTD when wardrobe changes ────────────────────── */
-  function handleOotdReset() {
-    setOotd(null)
-  }
-
-  /* ── Like toggle ─────────────────────────────────────────── */
   function toggleLike(id) {
-    setLiked((prev) => {
+    setLiked(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
   }
 
-  /* ── Render ──────────────────────────────────────────────── */
+  /* ── Show auth screen if not logged in ───────────────────── */
+  if (!user) {
+    return <AuthScreen onAuth={handleAuth} />
+  }
+
+  /* ── Main app ────────────────────────────────────────────── */
   return (
     <>
       {toast && <Toast msg={toast.msg} type={toast.type} />}
@@ -130,6 +179,17 @@ export default function App() {
               key="inspo"
               liked={liked}
               toggleLike={toggleLike}
+            />
+          )}
+
+          {tab === 'profile' && (
+            <ProfileScreen
+              key="profile"
+              user={user}
+              wardrobe={wardrobe}
+              liked={liked}
+              onLogout={handleLogout}
+              onUserUpdate={handleUserUpdate}
             />
           )}
         </AnimatePresence>
